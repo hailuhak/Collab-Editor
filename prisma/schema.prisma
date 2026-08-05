@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PermissionRole {
+  OWNER
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id          String       @id @default(cuid())
+  name        String
+  email       String       @unique
+  password    String
+
+  documents           Document[]
+  comments             Comment[]
+  permissions          Permission[]
+  passwordResetTokens  PasswordResetToken[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Document {
+  id          String       @id @default(cuid())
+  title       String
+  content     String       @db.Text
+
+  ownerId     String
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  comments    Comment[]
+  permissions Permission[]
+  versions    Version[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+
+  userId      String
+  documentId  String
+
+  author      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Permission {
+  id          String         @id @default(cuid())
+
+  userId      String
+  documentId  String
+
+  role        PermissionRole @default(VIEWER)
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document    Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, documentId])
+  @@index([userId])
+  @@index([documentId])
+}
+
+model Version {
+  id          String   @id @default(cuid())
+
+  documentId  String
+  content     String   @db.Text
+
+  version     Int
+
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@unique([documentId, version])
+  @@index([documentId])
+}
