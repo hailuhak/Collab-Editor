@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 
+import { PasswordInput } from "@/components/password-input";
 import { resetPassword } from "@/app/actions/password-reset";
 
 function ResetPasswordForm() {
@@ -92,14 +93,13 @@ function ResetPasswordForm() {
                 <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                   New password
                 </label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   minLength={8}
+                  maxLength={64}
                   required
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-600"
                 />
               </div>
 
@@ -107,14 +107,13 @@ function ResetPasswordForm() {
                 <label className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
                   Confirm password
                 </label>
-                <input
-                  type="password"
+                <PasswordInput
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder="••••••••"
                   minLength={8}
+                  maxLength={64}
                   required
-                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-600"
                 />
               </div>
 

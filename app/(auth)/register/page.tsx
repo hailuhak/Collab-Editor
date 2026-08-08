@@ -5,6 +5,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { registerUser } from "@/app/actions/auth";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import { PasswordInput } from "@/components/password-input";
 
 
 export default function RegisterPage() {
@@ -191,14 +192,12 @@ export default function RegisterPage() {
                             </label>
 
 
-                            <input
+                            <PasswordInput
                                 name="password"
-                                type="password"
                                 placeholder="••••••••"
                                 minLength={8}
                                 maxLength={64}
                                 required
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-600"
                             />
 
                         </div>
@@ -216,14 +215,12 @@ export default function RegisterPage() {
                             </label>
 
 
-                            <input
+                            <PasswordInput
                                 name="confirmPassword"
-                                type="password"
                                 placeholder="••••••••"
                                 minLength={8}
                                 maxLength={64}
                                 required
-                                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-600"
                             />
 
                         </div>

@@ -88,7 +88,7 @@ export async function requestPasswordReset(email: string) {
 const resetSchema = passwordSchema;
 
 export async function resetPassword(token: string, password: string) {
-   const parsed = resetSchema.safeParse({ password });
+   const parsed = resetSchema.safeParse(password);
    if (!parsed.success) {
       return { error: parsed.error.issues[0]?.message ?? "Invalid password" };
    }
@@ -106,7 +106,7 @@ export async function resetPassword(token: string, password: string) {
       return { error: "This reset link has expired" };
    }
 
-   const hashed = await bcrypt.hash(parsed.data.password, 12);
+   const hashed = await bcrypt.hash(parsed.data, 12);
 
    await prisma.$transaction([
       prisma.user.update({

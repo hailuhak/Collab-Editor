@@ -8,7 +8,7 @@ const MAX_BUCKETS = 10_000;
 
 export function checkRateLimit(
   key: string,
-  options: { windowMs: number }
+  options: { limit: number; windowMs: number; blockMs?: number }
 ): { blocked: boolean; retryAfterMs: number } {
   if (buckets.size > MAX_BUCKETS) {
     const now = Date.now();

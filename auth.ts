@@ -5,7 +5,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, checkRateLimit } from "@/lib/rate-limit";
 import { normalizeEmail } from "@/lib/validations/auth";
 
 function getClientIp(req: unknown): string {
@@ -53,8 +53,16 @@ export const authOptions: NextAuthOptions = {
         const key = `login:${email}:${ip}`;
 
         const blocked =
-          checkRateLimit(key, { windowMs: 15 * 60 * 1000 }).blocked ||
-          checkRateLimit(`login-ip:${ip}`, { windowMs: 15 * 60 * 1000 }).blocked;
+          checkRateLimit(key, {
+            limit: 5,
+            windowMs: 15 * 60 * 1000,
+            blockMs: 15 * 60 * 1000,
+          }).blocked ||
+          checkRateLimit(`login-ip:${ip}`, {
+            limit: 20,
+            windowMs: 15 * 60 * 1000,
+            blockMs: 15 * 60 * 1000,
+          }).blocked;
         if (blocked) {
           throw new Error("Too many attempts. Please try again in 15 minutes.");
         }
