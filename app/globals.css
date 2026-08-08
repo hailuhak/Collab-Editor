@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (next-themes sets .dark on <html>) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -12,11 +15,9 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0a0e1a;
+  --foreground: #ededed;
 }
 
 body {
@@ -24,14 +25,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
-/* Tiptap editor */
 
+/* ------------------------------------------------------------------
+ * Editor (ProseMirror)
+ * ------------------------------------------------------------------ */
 .ProseMirror {
   min-height: 900px;
   outline: none;
   color: #202124;
-  font-size: 16px;
-  line-height: 1.6;
+  font-size: 11pt;
+  line-height: 1.55;
+  word-wrap: break-word;
 }
 
 .ProseMirror:focus {
@@ -39,54 +43,240 @@ body {
 }
 
 .ProseMirror p {
-  margin: 0;
-}
-
-.ProseMirror {
-  min-height: 900px;
-  outline: none;
-
-  color: #202124;
-
-  font-size: 16px;
-  line-height: 1.6;
-}
-
-.ProseMirror:focus {
-  outline: none;
-}
-
-.ProseMirror p {
-  margin: 0;
+  margin: 0 0 10px;
 }
 
 .ProseMirror h1 {
-  font-size: 2rem;
+  font-size: 2em;
   font-weight: 600;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  margin: 14px 0 8px;
+  line-height: 1.3;
 }
 
 .ProseMirror h2 {
-  font-size: 1.5rem;
+  font-size: 1.5em;
   font-weight: 600;
-  margin-top: 1rem;
-  margin-bottom: 0.5rem;
+  margin: 14px 0 8px;
+  line-height: 1.3;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25em;
+  font-weight: 600;
+  margin: 12px 0 8px;
+  line-height: 1.3;
 }
 
 .ProseMirror ul {
   list-style-type: disc;
   padding-left: 2rem;
+  margin: 0 0 10px;
 }
 
 .ProseMirror ol {
   list-style-type: decimal;
   padding-left: 2rem;
+  margin: 0 0 10px;
+}
+
+.ProseMirror li {
+  margin-bottom: 4px;
+}
+
+.ProseMirror li p {
+  margin: 0;
 }
 
 .ProseMirror blockquote {
-  border-left: 3px solid #d1d5db;
+  border-left: 3px solid #dadce0;
   padding-left: 1rem;
-  margin-left: 0;
-  color: #6b7280;
+  margin: 0 0 10px;
+  color: #5f6368;
+}
+
+.ProseMirror code {
+  background: #f1f3f4;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-family: "Roboto Mono", Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.ProseMirror pre {
+  background: #f8f9fa;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  padding: 12px;
+  margin: 0 0 10px;
+  overflow-x: auto;
+}
+
+.ProseMirror pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.ProseMirror a {
+  color: #1a73e8;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.dark .ProseMirror {
+  color: #e8eaed;
+}
+
+.dark .ProseMirror blockquote {
+  border-left-color: #3c4043;
+  color: #9aa0a6;
+}
+
+.dark .ProseMirror code {
+  background: #1f2937;
+}
+
+.dark .ProseMirror pre {
+  background: #1a1d23;
+  border-color: #3c4043;
+}
+
+.dark .ProseMirror a {
+  color: #8ab4f8;
+}
+
+.dark .ProseMirror hr {
+  border-top-color: #3c4043;
+}
+
+.dark .ProseMirror p.is-editor-empty:first-child::before {
+  color: #5f6368;
+}
+
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #dadce0;
+  margin: 16px 0;
+}
+
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0.25rem;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 2px;
+  user-select: none;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1;
+}
+
+/* Placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #80868b;
+  pointer-events: none;
+  height: 0;
+}
+
+/* ------------------------------------------------------------------
+ * Remote collaboration cursors & selections
+ * ------------------------------------------------------------------ */
+.remote-cursor {
+  position: relative;
+  border-left: 2px solid var(--cursor-color, #4285f4);
+  margin-left: -1px;
+  margin-right: -1px;
+  height: 1.15em;
+  pointer-events: none;
+}
+
+.remote-cursor-label {
+  position: absolute;
+  top: -1.5em;
+  left: -2px;
+  background: var(--cursor-color, #4285f4);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px 3px 3px 0;
+  white-space: nowrap;
+  pointer-events: none;
+  line-height: 1.4;
+  z-index: 20;
+}
+
+.remote-selection {
+  border-radius: 2px;
+}
+
+/* ------------------------------------------------------------------
+ * Misc helpers
+ * ------------------------------------------------------------------ */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------------
+ * Print / PDF export
+ * ------------------------------------------------------------------ */
+@media print {
+  body {
+    background: #fff !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+
+  header,
+  aside,
+  .no-print,
+  nav {
+    display: none !important;
+  }
+
+  .print\:py-0 {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .print\:max-w-none {
+    max-width: none !important;
+  }
+
+  .print\:min-h-0 {
+    min-height: 0 !important;
+  }
+
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
 }

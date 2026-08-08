@@ -1,43 +1,34 @@
-import { getServerSession } from "next-auth";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
-import { authOptions } from "@/auth";
-import { prisma } from "@/lib/prisma";
-
+import { getDocumentForEditor, markDocumentOpened } from "@/app/actions/documents";
 import DocumentEditor from "@/components/editor/document-editor";
 
 type DocumentPageProps = {
-   params: Promise<{
-      id: string;
-   }>;
+  params: Promise<{
+    id: string;
+  }>;
 };
 
-export default async function DocumentPage({
-   params,
-}: DocumentPageProps) {
-   const session = await getServerSession(authOptions);
+export default async function DocumentPage({ params }: DocumentPageProps) {
+  const { id } = await params;
 
-   if (!session?.user?.email) {
-      redirect("/login");
-   }
+  const data = await getDocumentForEditor(id);
 
-   const { id } = await params;
+  if (!data) {
+    redirect("/login");
+  }
 
-   const document = await prisma.document.findUnique({
-      where: {
-         id,
-      },
-   });
+  // Fire-and-forget: bump "recently opened".
+  void markDocumentOpened(id);
 
-   if (!document) {
-      notFound();
-   }
-
-   return (
-      <DocumentEditor
-         documentId={document.id}
-         initialTitle={document.title}
-         initialContent={document.content}
-      />
-   );
+  return (
+    <DocumentEditor
+      documentId={data.document.id}
+      initialTitle={data.document.title}
+      initialContent={data.document.content}
+      role={data.role}
+      ownerId={data.document.ownerId}
+      user={data.user}
+    />
+  );
 }

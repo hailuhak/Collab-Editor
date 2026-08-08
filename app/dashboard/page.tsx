@@ -1,50 +1,29 @@
-import { getServerSession } from "next-auth";
-import { redirect } from "next/navigation";
-
-import { authOptions } from "@/auth";
-import { prisma } from "@/lib/prisma";
-
+import { getDashboardDocuments } from "@/app/actions/documents";
 import DashboardHeader from "@/components/dashboard/dashboard-header";
-import RecentDocuments from "@/components/dashboard/recent-documents";
-import DocumentList from "@/components/dashboard/document-list";
+import DashboardClient from "@/components/dashboard/dashboard-client";
 
 export default async function DashboardPage() {
-   const session = await getServerSession(authOptions);
+  const data = await getDashboardDocuments();
 
-   if (!session?.user?.email) {
-      redirect("/login");
-   }
+  if (!data) {
+    return null;
+  }
 
-   const user = await prisma.user.findUnique({
-      where: {
-         email: session.user.email,
-      },
-      include: {
-         documents: {
-            orderBy: {
-               updatedAt: "desc",
-            },
-         },
-      },
-   });
-
-   if (!user) {
-      redirect("/login");
-   }
-
-   return (
-      <div className="min-h-screen bg-white">
-
-         <DashboardHeader user={user} />
-
-         <div className="mx-auto max-w-7xl px-6 py-8">
-
-            <RecentDocuments documents={user.documents} />
-
-            <DocumentList documents={user.documents} />
-
-         </div>
-
-      </div>
-   );
+  return (
+    <div className="min-h-screen bg-white dark:bg-[#0A0E1A]">
+      <DashboardHeader
+        user={{
+          name: data.user.name,
+          email: data.user.email,
+          image: data.user.image,
+        }}
+      />
+      <DashboardClient
+        user={data.user}
+        owned={data.owned}
+        shared={data.shared}
+        recent={data.recent}
+      />
+    </div>
+  );
 }

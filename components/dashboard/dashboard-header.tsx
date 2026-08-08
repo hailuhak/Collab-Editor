@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { useTheme } from "next-themes";
@@ -24,14 +24,16 @@ type DashboardHeaderProps = {
 
 export default function DashboardHeader({ user }: DashboardHeaderProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Avoid hydration mismatch for theme toggle
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Avoid hydration mismatch for the theme toggle: render the button only
+  // once we know we're on the client (server snapshot is false).
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {

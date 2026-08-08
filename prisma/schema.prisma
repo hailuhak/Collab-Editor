@@ -10,6 +10,7 @@ datasource db {
 enum PermissionRole {
   OWNER
   EDITOR
+  COMMENTER
   VIEWER
 }
 
@@ -21,10 +22,14 @@ model User {
   emailVerified DateTime?
   image         String?
 
-  documents           Document[]
-  comments            Comment[]
+  documents           Document[]         @relation("OwnedDocuments")
+  modifiedDocuments   Document[]         @relation("LastModified")
+  comments            Comment[]          @relation("AuthoredComments")
+  resolvedComments    Comment[]          @relation("ResolvedComments")
   permissions         Permission[]
+  versions            Version[]
   passwordResetTokens PasswordResetToken[]
+  notifications       Notification[]
 
   accounts Account[]
   sessions Session[]
@@ -90,9 +95,14 @@ model Document {
   title   String
   content String @db.Text
 
-  ownerId String
+  // Monotonic revision used by the realtime sync layer to order writes.
+  revision Int @default(0)
 
-  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId          String
+  lastModifiedById String?
+
+  owner          User   @relation("OwnedDocuments", fields: [ownerId], references: [id], onDelete: Cascade)
+  lastModifiedBy User?  @relation("LastModified", fields: [lastModifiedById], references: [id], onDelete: SetNull)
 
   comments    Comment[]
   permissions Permission[]
@@ -102,23 +112,36 @@ model Document {
   updatedAt DateTime @updatedAt
 
   @@index([ownerId])
+  @@index([lastModifiedById])
 }
 
 model Comment {
   id      String @id @default(cuid())
   content String @db.Text
 
+  // Selection anchor (text snippet) the comment is attached to.
+  selection String?
+
   userId     String
   documentId String
+  parentId   String?
 
-  author   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  resolved    Boolean   @default(false)
+  resolvedById String?
+  resolvedAt  DateTime?
+
+  parent    Comment?   @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   Comment[]  @relation("CommentReplies")
+  author    User       @relation("AuthoredComments", fields: [userId], references: [id], onDelete: Cascade)
+  resolvedBy User?     @relation("ResolvedComments", fields: [resolvedById], references: [id], onDelete: SetNull)
+  document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([documentId])
+  @@index([parentId])
 }
 
 model Permission {
@@ -128,6 +151,9 @@ model Permission {
   documentId String
 
   role PermissionRole @default(VIEWER)
+
+  // Tracks the last time this user opened the document (for "Recent").
+  lastOpenedAt DateTime?
 
   user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
@@ -146,10 +172,27 @@ model Version {
   content    String @db.Text
   version    Int
 
+  authorId String
+
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
   @@unique([documentId, version])
   @@index([documentId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  message   String
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
