@@ -14,18 +14,63 @@ enum PermissionRole {
 }
 
 model User {
-  id          String       @id @default(cuid())
-  name        String
-  email       String       @unique
-  password    String
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  password      String?
+  emailVerified DateTime?
+  image         String?
 
   documents           Document[]
-  comments             Comment[]
-  permissions          Permission[]
-  passwordResetTokens  PasswordResetToken[]
+  comments            Comment[]
+  permissions         Permission[]
+  passwordResetTokens PasswordResetToken[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  accounts Account[]
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+
+  refresh_token String? @db.Text
+  access_token  String? @db.Text
+  expires_at    Int?
+  token_type    String?
+  scope         String?
+  id_token      String? @db.Text
+  session_state String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model PasswordResetToken {
@@ -41,52 +86,53 @@ model PasswordResetToken {
 }
 
 model Document {
-  id          String       @id @default(cuid())
-  title       String
-  content     String       @db.Text
+  id      String @id @default(cuid())
+  title   String
+  content String @db.Text
 
-  ownerId     String
-  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId String
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   comments    Comment[]
   permissions Permission[]
   versions    Version[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([ownerId])
 }
 
 model Comment {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
+  id      String @id @default(cuid())
+  content String @db.Text
 
-  userId      String
-  documentId  String
+  userId     String
+  documentId String
 
-  author      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  author   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
   @@index([documentId])
 }
 
 model Permission {
-  id          String         @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId      String
-  documentId  String
+  userId     String
+  documentId String
 
-  role        PermissionRole @default(VIEWER)
+  role PermissionRole @default(VIEWER)
 
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  document    Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([userId, documentId])
   @@index([userId])
@@ -94,16 +140,15 @@ model Permission {
 }
 
 model Version {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  documentId  String
-  content     String   @db.Text
+  documentId String
+  content    String @db.Text
+  version    Int
 
-  version     Int
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
-  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([documentId, version])
   @@index([documentId])

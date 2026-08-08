@@ -1,39 +1,99 @@
-// auth.ts (or lib/auth.ts, v4 convention)
-import { NextAuthOptions } from "next-auth";
+import NextAuth, { NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
+
 import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
-   providers: [
-      Credentials({
-         name: "Credentials",
-         credentials: {
-            email: { label: "Email", type: "email" },
-            password: { label: "Password", type: "password" },
-         },
-         async authorize(credentials) {
-            if (!credentials?.email || !credentials?.password) return null;
+  adapter: PrismaAdapter(prisma),
 
-            const user = await prisma.user.findUnique({
-               where: { email: credentials.email as string },
-            });
-            if (!user) return null;
+  providers: [
+    // =========================
+    // EMAIL + PASSWORD
+    // =========================
+    Credentials({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
 
-            const passwordMatch = await bcrypt.compare(
-               credentials.password as string,
-               user.password
-            );
-            if (!passwordMatch) return null;
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
 
-            return { id: user.id, name: user.name, email: user.email };
-         },
-      }),
-      Google({
-         clientId: process.env.GOOGLE_CLIENT_ID!,
-         clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      }),
-   ],
-   session: { strategy: "jwt" },
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email,
+          },
+        });
+
+        if (!user || !user.password) {
+          return null;
+        }
+
+        const passwordMatch = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!passwordMatch) {
+          return null;
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          image: user.image,
+        };
+      },
+    }),
+
+    // =========================
+    // GOOGLE
+    // =========================
+    Google({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      allowDangerousEmailAccountLinking: true, // Enables account linking
+    }),
+  ],
+
+  // =========================
+  // SESSION
+  // =========================
+  session: {
+    strategy: "jwt",
+  },
+
+  // =========================
+  // CALLBACKS (Required for JWT + PrismaAdapter)
+  // =========================
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+  },
+
+  // =========================
+  // PAGES
+  // =========================
+  pages: {
+    signIn: "/login",
+  },
 };
+
+export default NextAuth(authOptions);
