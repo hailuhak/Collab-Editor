@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { memo, useState, useRef, useEffect } from "react";
 import type { Editor } from "@tiptap/react";
 import {
   Undo2,
@@ -148,7 +148,7 @@ function ColorDropdown({
   );
 }
 
-export default function EditorToolbar({
+const EditorToolbar = memo(function EditorToolbar({
   editor,
   canEdit,
 }: EditorToolbarProps) {
@@ -410,4 +410,6 @@ export default function EditorToolbar({
       </div>
     </div>
   );
-}
+});
+
+export default EditorToolbar;

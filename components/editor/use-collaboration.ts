@@ -33,10 +33,10 @@ export function useCollaboration({
   const [connected, setConnected] = useState(false);
 
   const revisionRef = useRef(0);
-  const applyingRef = useRef(false);
   const presenceRef = useRef<RemoteUser[]>([]);
   const lastCursorRef = useRef<{ from: number; to: number } | null>(null);
   const typingThrottleRef = useRef(0);
+  const presenceThrottleRef = useRef(0);
   const typingTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   useEffect(() => {
@@ -66,18 +66,44 @@ export function useCollaboration({
   // ------------------------------------------------------------------
   // Apply canonical server content into the editor (no echo back)
   // ------------------------------------------------------------------
+  const pendingRemoteRef = useRef<string | null>(null);
+  const remoteFlushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  const flushRemoteContent = useCallback(() => {
+    remoteFlushTimerRef.current = null;
+    const content = pendingRemoteRef.current;
+    pendingRemoteRef.current = null;
+    if (!content) return;
+
+    const currentEditor = editorRef.current;
+    if (!currentEditor) return;
+
+    try {
+      currentEditor.commands.setContent(JSON.parse(content), {
+        emitUpdate: false,
+      });
+    } catch {
+      // Malformed content from the server: ignore.
+    }
+  }, []);
+
+  // Coalesce bursts of remote updates so a batch of keystrokes applies once.
+  const queueRemoteContent = useCallback((content: string) => {
+    pendingRemoteRef.current = content;
+    if (remoteFlushTimerRef.current) return;
+    remoteFlushTimerRef.current = setTimeout(flushRemoteContent, 50);
+  }, [flushRemoteContent]);
+
   const applyRemoteContent = useCallback((content: string) => {
     const currentEditor = editorRef.current;
     if (!currentEditor) return;
 
     try {
-      const json = JSON.parse(content);
-      const current = currentEditor.getJSON();
-      if (JSON.stringify(json) === JSON.stringify(current)) return;
-
-      applyingRef.current = true;
-      currentEditor.commands.setContent(json, { emitUpdate: false });
-      currentEditor.commands.focus("start");
+      currentEditor.commands.setContent(JSON.parse(content), {
+        emitUpdate: false,
+      });
     } catch {
       // Malformed content from the server: ignore.
     }
@@ -115,7 +141,7 @@ export function useCollaboration({
         socket.on("doc:updated", (payload: DocumentUpdatedPayload) => {
           if (payload.revision <= revisionRef.current) return;
           revisionRef.current = payload.revision;
-          applyRemoteContent(payload.content);
+          queueRemoteContent(payload.content);
         });
 
         socket.on("presence:list", ({ users }: { users: RemoteUser[] }) => {
@@ -161,7 +187,7 @@ export function useCollaboration({
       socketRef.current?.disconnect();
       socketRef.current = null;
     };
-  }, [documentId, applyRemoteContent]);
+  }, [documentId, applyRemoteContent, queueRemoteContent]);
 
   // ------------------------------------------------------------------
   // Editor -> socket: content, typing indicator, presence
@@ -180,11 +206,6 @@ export function useCollaboration({
 
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (applyingRef.current) {
-          applyingRef.current = false;
-          return;
-        }
-
         const content = JSON.stringify(editor.getJSON());
         const socket = socketRef.current;
 
@@ -212,6 +233,9 @@ export function useCollaboration({
       const prev = lastCursorRef.current;
       if (prev && prev.from === from && prev.to === to) return;
       lastCursorRef.current = { from, to };
+      const now = Date.now();
+      if (now - presenceThrottleRef.current < 40) return;
+      presenceThrottleRef.current = now;
       socketRef.current?.emit("presence:update", {
         documentId,
         cursor: { from, to },

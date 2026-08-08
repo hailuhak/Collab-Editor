@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect, useMemo, useTransition } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import { Eye, Loader2 } from "lucide-react";
 
@@ -46,9 +46,15 @@ export default function DocumentEditor({
   const [, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const editorExtensions = useMemo(() => buildEditorExtensions(), []);
+  const editorContent = useMemo(
+    () => (initialContent ? JSON.parse(initialContent) : ""),
+    [initialContent]
+  );
+
   const editor = useEditor({
-    extensions: buildEditorExtensions(),
-    content: initialContent ? JSON.parse(initialContent) : "",
+    extensions: editorExtensions,
+    content: editorContent,
     editable: canEdit,
     immediatelyRender: false,
   });
